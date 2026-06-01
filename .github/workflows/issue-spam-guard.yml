@@ -13,8 +13,12 @@ on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: '要测试的 issue 号（读取内容→判断→命中即删除，不受 owner 白名单限制）'
-        required: true
+        description: '要测试的 issue 号（留空则测试 comment_id）'
+        required: false
+        type: string
+      comment_id:
+        description: '要测试的评论 id（填了则测评论，优先于 issue_number）'
+        required: false
         type: string
 
 permissions:
@@ -36,6 +40,25 @@ jobs:
             const model   = process.env.AI_MODEL || 'gpt-4o-mini';
             if (!baseUrl || !apiKey) { core.setFailed('缺少 AI_BASE_URL 或 AI_API_KEY secret'); return; }
 
+            const commentId = (context.payload.inputs.comment_id || '').trim();
+
+            if (commentId) {
+              // ---- 测试评论 ----
+              const { data: comment } = await github.rest.issues.getComment({
+                owner: context.repo.owner, repo: context.repo.repo, comment_id: Number(commentId),
+              });
+              const text = `这是某 issue 下的一条评论：\n${comment.body || ''}`;
+              const verdict = await classify(text, { fetch, core, baseUrl, apiKey, model, prompt: process.env.AI_PROMPT });
+              core.notice(`评论分类结果: spam=${verdict?.spam} 理由=${verdict?.reason || '无'}`);
+              if (!verdict || !verdict.spam) { core.info('非垃圾评论，保留。'); return; }
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner, repo: context.repo.repo, comment_id: Number(commentId),
+              });
+              core.notice(`已删除垃圾评论 (comment id ${commentId})`);
+              return;
+            }
+
+            // ---- 测试 issue ----
             const number = Number(context.payload.inputs.issue_number);
             const { data: issue } = await github.rest.issues.get({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: number,
