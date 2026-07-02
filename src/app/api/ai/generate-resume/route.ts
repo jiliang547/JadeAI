@@ -45,6 +45,7 @@ Resume generation guidelines:
 }
 
 import { extractJson } from '@/lib/ai/extract-json';
+import { normalizeSectionContent } from '@/lib/resume/normalize-content';
 import { z } from 'zod/v4';
 
 const generateResumeOutputSchema = z.object({
@@ -89,11 +90,7 @@ export async function POST(request: NextRequest) {
       ? `\n\nThe candidate provided the following work experience description. Parse this into structured work_experience items, and use it to inform the summary, skills, and projects sections:\n---\n${experience}\n---`
       : '';
 
-    const result = await generateText({
-      model,
-      maxOutputTokens: 8192,
-      system: getSystemPrompt(lang),
-      prompt: `Generate a complete resume for a ${jobTitle} ${yearsOfExperience === 0 ? 'at entry level (fresh graduate / no prior experience)' : `with ${yearsOfExperience} years of experience`}.${skillsContext}${industryContext}${experienceContext}
+    const promptText = `Generate a complete resume for a ${jobTitle} ${yearsOfExperience === 0 ? 'at entry level (fresh graduate / no prior experience)' : `with ${yearsOfExperience} years of experience`}.${skillsContext}${industryContext}${experienceContext}
 
 Return a JSON object with these exact top-level keys: personal_info, summary, work_experience, education, skills, projects.
 
@@ -105,9 +102,33 @@ The structure must be:
 - skills: { categories: [{ name, skills: string[] }] }
 - projects: { items: [{ name, url?, startDate?, endDate?, description, technologies: string[], highlights: string[] }] }
 
-Respond with JSON only.`,
-      providerOptions: getJsonProviderOptions(aiConfig),
-    });
+Respond with JSON only.`;
+
+    // Higher cap than a single chat turn: a full 6-section resume can exceed 8192
+    // output tokens, which truncates the JSON and makes extractJson fail (issue #87).
+    const generate = (providerOptions: ReturnType<typeof getJsonProviderOptions>) =>
+      generateText({
+        model,
+        maxOutputTokens: 16384,
+        system: getSystemPrompt(lang),
+        prompt: promptText,
+        providerOptions,
+      });
+
+    let result;
+    try {
+      result = await generate(getJsonProviderOptions(aiConfig));
+    } catch (err) {
+      // Some OpenAI-compatible endpoints reject `response_format: json_object`.
+      // The prompt already demands raw JSON and extractJson repairs the output,
+      // so retry once without the JSON-mode option before giving up.
+      const opts = getJsonProviderOptions(aiConfig);
+      if (Object.keys(opts).length > 0) {
+        result = await generate({} as ReturnType<typeof getJsonProviderOptions>);
+      } else {
+        throw err;
+      }
+    }
 
     const generatedData: GenerateResumeOutput = extractJson(result.text, generateResumeOutputSchema) as GenerateResumeOutput;
 
@@ -140,7 +161,8 @@ Respond with JSON only.`,
         type,
         title: titles[type],
         sortOrder: i,
-        content,
+        // Guard against the model returning list fields as strings (issue #87).
+        content: normalizeSectionContent(type, content),
       });
     }
 
@@ -157,6 +179,13 @@ Respond with JSON only.`,
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
     console.error('POST /api/ai/generate-resume error:', error);
-    return NextResponse.json({ error: 'Failed to generate resume' }, { status: 500 });
+    // Surface the underlying reason (bad model id, endpoint rejected the request,
+    // JSON parse failure, …) so the user can actually diagnose it instead of a
+    // generic message (issue #87).
+    const detail = error instanceof Error && error.message ? error.message : '';
+    return NextResponse.json(
+      { error: detail ? `Failed to generate resume: ${detail}` : 'Failed to generate resume' },
+      { status: 500 }
+    );
   }
 }

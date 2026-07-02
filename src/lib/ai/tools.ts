@@ -4,6 +4,7 @@ import { resumeRepository } from '@/lib/db/repositories/resume.repository';
 import { getModel, getJsonProviderOptions, type AIConfig } from '@/lib/ai/provider';
 import { jdAnalysisOutputSchema } from '@/lib/ai/jd-analysis-schema';
 import { extractJson } from '@/lib/ai/extract-json';
+import { normalizeSectionContent } from '@/lib/resume/normalize-content';
 
 export function createExecutableTools(resumeId: string, aiConfig: AIConfig) {
   return {
@@ -128,7 +129,10 @@ Use field="items" or field="categories" to update list sections. Each item MUST 
           }));
         }
 
-        const updatedContent = { ...(section.content as Record<string, unknown>), [actualField]: parsedValue };
+        const merged = { ...(section.content as Record<string, unknown>), [actualField]: parsedValue };
+        // Coerce inner list fields (highlights/technologies/skills) to arrays so a
+        // string written by the model can't crash the renderer (issue #87).
+        const updatedContent = normalizeSectionContent(section.type, merged);
         await resumeRepository.updateSection(sectionId, { content: updatedContent });
 
         return { success: true, sectionType: section.type, field: actualField, updatedContent };
@@ -185,7 +189,8 @@ Use field="items" or field="categories" to update list sections. Each item MUST 
         const section = resume.sections.find((s: any) => s.id === sectionId);
         if (!section) return { success: false, error: 'Section not found' };
 
-        const updatedContent = { ...(section.content as Record<string, unknown>), [field]: improvedText };
+        const merged = { ...(section.content as Record<string, unknown>), [field]: improvedText };
+        const updatedContent = normalizeSectionContent(section.type, merged);
         await resumeRepository.updateSection(sectionId, { content: updatedContent });
 
         return { success: true, sectionType: section.type, field, improvedText };
@@ -315,12 +320,17 @@ Rules:
         await Promise.all(Array.from({ length: Math.min(CONCURRENCY, sections.length) }, () => worker()));
 
         // Apply results to DB
+        const typeById = new Map<string, string>(
+          sections.map((s: { sectionId: string; type: string }) => [s.sectionId, s.type] as [string, string])
+        );
         for (const r of results) {
           if (!r.ok) { failed++; continue; }
           const translated = r.data;
+          const sectionType: string = typeById.get(translated.sectionId) || '';
           await resumeRepository.updateSection(translated.sectionId, {
             title: translated.title,
-            content: translated.content,
+            // A mistranslated structure could crash the renderer — normalize it (issue #87).
+            content: normalizeSectionContent(sectionType, translated.content),
           });
           succeeded++;
         }

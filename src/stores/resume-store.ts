@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import type { Resume, ResumeSection, SectionContent } from '@/types/resume';
 import { AUTOSAVE_DELAY } from '@/lib/constants';
-import { generateId } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/settings-store';
+import { normalizeSectionContent } from '@/lib/resume/normalize-content';
 
 interface ResumeStore {
   currentResume: Resume | null;
@@ -37,25 +37,14 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     const { _saveTimeout } = get();
     if (_saveTimeout) clearTimeout(_saveTimeout);
 
-    // Normalize: ensure all items/categories in section content have id fields
-    const sections = (resume.sections || []).map((s) => {
-      const content = s.content as unknown as Record<string, unknown>;
-      if (Array.isArray(content?.items)) {
-        content.items = (content.items as any[]).map((item) =>
-          typeof item === 'object' && item !== null && !item.id
-            ? { ...item, id: generateId() }
-            : item
-        );
-      }
-      if (Array.isArray(content?.categories)) {
-        content.categories = (content.categories as any[]).map((cat) =>
-          typeof cat === 'object' && cat !== null && !cat.id
-            ? { ...cat, id: generateId() }
-            : cat
-        );
-      }
-      return { ...s, content: content as unknown as typeof s.content };
-    });
+    // Normalize section content into the shape the renderers expect. Beyond adding
+    // missing item/category ids, this coerces list fields (highlights/technologies/
+    // skills) back into arrays so a resume that the AI corrupted (issue #87) can be
+    // opened and repaired instead of crashing the editor on render.
+    const sections = (resume.sections || []).map((s) => ({
+      ...s,
+      content: normalizeSectionContent(s.type, s.content) as unknown as typeof s.content,
+    }));
 
     set({
       currentResume: { ...resume, sections },

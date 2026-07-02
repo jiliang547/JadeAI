@@ -130,7 +130,8 @@
       "coverLetter": "Cover Letter",
       "grammarCheck": "Grammar",
       "share": "Share",
-      "import": "Import"
+      "import": "Import",
+      "previewError": "Preview failed to render — the content may be malformed. Edit it on the left to fix, or undo the recent AI changes."
     },
     "aiPolish": "AI Polish",
     "invalidSectionContent": "This section has invalid data. Please use AI to regenerate the content.",
@@ -482,6 +483,8 @@
     "exporting": "Exporting...",
     "success": "Export successful!",
     "error": "Export failed. Please try again.",
+    "pdfFailedHint": "The server couldn't generate the PDF (Chromium may be missing or under-resourced). You can print to PDF in your browser instead.",
+    "printFallback": "Print to PDF in browser",
     "cancel": "Cancel"
   },
   "import": {

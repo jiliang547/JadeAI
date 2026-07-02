@@ -5,6 +5,7 @@ import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ResumePreview } from '@/components/preview/resume-preview';
+import { PreviewErrorBoundary } from '@/components/preview/preview-error-boundary';
 import { useResumeStore } from '@/stores/resume-store';
 import { useIsMobile } from "@/hooks/use-media-query";
 import type { Resume } from '@/types/resume';
@@ -66,7 +67,14 @@ export function EditorPreviewPanel() {
               zoom: isMobile ? undefined : scale,
             }}
           >
-            <ResumePreview resume={liveResume} />
+            <PreviewErrorBoundary
+              resetKey={liveResume.sections}
+              fallback={
+                <div className="p-8 text-center text-sm text-zinc-500">{t('previewError')}</div>
+              }
+            >
+              <ResumePreview resume={liveResume} />
+            </PreviewErrorBoundary>
           </div>
         </div>
       </div>

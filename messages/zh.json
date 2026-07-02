@@ -130,7 +130,8 @@
       "coverLetter": "求职信",
       "grammarCheck": "语法检查",
       "share": "分享",
-      "import": "导入"
+      "import": "导入",
+      "previewError": "预览渲染失败，可能是内容格式有误。请在左侧编辑修复，或撤销最近的 AI 修改。"
     },
     "aiPolish": "AI 润色",
     "invalidSectionContent": "该模块数据异常，请使用 AI 重新生成内容",
@@ -482,6 +483,8 @@
     "exporting": "导出中...",
     "success": "导出成功！",
     "error": "导出失败，请重试。",
+    "pdfFailedHint": "服务器生成 PDF 失败（可能未安装 Chromium 或资源不足）。可改用浏览器打印为 PDF。",
+    "printFallback": "用浏览器打印为 PDF",
     "cancel": "取消"
   },
   "import": {
