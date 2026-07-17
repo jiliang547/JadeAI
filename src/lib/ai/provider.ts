@@ -10,11 +10,20 @@ export interface AIConfig {
   model: string;
 }
 
+// 服务端默认 AI 配置（从环境变量读取，不硬编码 Key，避免泄露到代码仓库）
+// 当请求未携带 x-api-key 等头部时，自动回退到此处默认值，
+// 便于小程序等前端直接调用而无需在客户端保存 Key。
+// 配置方式：在云托管控制台为服务添加环境变量
+//   AI_DEFAULT_API_KEY / AI_DEFAULT_BASE_URL / AI_DEFAULT_MODEL
+const SERVER_DEFAULT_API_KEY = process.env.AI_DEFAULT_API_KEY || '';
+const SERVER_DEFAULT_BASE_URL = process.env.AI_DEFAULT_BASE_URL || 'https://hjlyy.cc/v1';
+const SERVER_DEFAULT_MODEL = process.env.AI_DEFAULT_MODEL || 'gpt-5.6-luna';
+
 export function extractAIConfig(request: NextRequest): AIConfig {
   const provider = request.headers.get('x-provider') || 'openai';
-  const apiKey = request.headers.get('x-api-key') || '';
-  const baseURL = request.headers.get('x-base-url') || 'https://api.openai.com/v1';
-  const model = request.headers.get('x-model') || 'gpt-4o';
+  const apiKey = request.headers.get('x-api-key') || SERVER_DEFAULT_API_KEY;
+  const baseURL = request.headers.get('x-base-url') || SERVER_DEFAULT_BASE_URL;
+  const model = request.headers.get('x-model') || SERVER_DEFAULT_MODEL;
   return { provider, apiKey, baseURL, model };
 }
 

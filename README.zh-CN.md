@@ -18,6 +18,52 @@
 
 ---
 
+## 云端部署（Tencent CloudBase 云托管）
+
+本项目已部署至腾讯云开发 CloudBase 云托管（容器服务），以下为部署信息，便于后续维护与更新。
+
+### 部署信息
+
+| 项目 | 内容 |
+|------|------|
+| 平台 | 腾讯云开发 CloudBase 云托管（容器） |
+| 环境 ID | `job-cloudbase-d3gmwfirefedc8c0e` |
+| 环境别名 | `job-cloudbase` |
+| 服务名 | `jadeai-init11` |
+| 代码来源 | GitHub 仓库（fork 后绑定，云端构建） |
+| 构建方式 | 使用项目根目录 `Dockerfile` 构建镜像 |
+| 对外访问端口 | `80`（平台自动映射） |
+| 容器监听端口 | `3000`（Next.js standalone） |
+| 数据库 | SQLite（默认，文件位于容器内 `/app/data/jade.db`） |
+| 数据持久化 | 暂未挂载 CFS（容器重启数据会重置，后续可按需挂载 CFS 到 `/app/data`） |
+
+### 访问地址
+
+部署完成后，在云托管控制台 `jadeai-init11` 服务详情中获取访问域名，浏览器直接打开即可使用完整 Web 应用。
+
+### 服务端环境变量
+
+| 变量 | 值 | 说明 |
+|------|-----|------|
+| `DB_TYPE` | `sqlite` | 使用 SQLite |
+| `SQLITE_PATH` | `./data/jade.db` | SQLite 文件路径 |
+| `DEFAULT_LOCALE` | `zh` | 默认中文界面 |
+| `AUTH_ENABLED` | `false` | 指纹模式，免登录 |
+| `NODE_ENV` | `production` | 生产模式 |
+
+### AI 配置
+
+- AI 默认 Base URL：`https://hjlyy.cc/v1`（已在 `src/lib/ai/provider.ts` 设为默认值）
+- AI 默认模型：`gpt-5.6-luna`
+- API Key 由用户在前端「设置 > AI」中自行填写（不落服务端）
+- 如需更换默认供应商/模型，修改 `src/lib/ai/provider.ts` 中的 fallback 值后重新部署
+
+### 更新部署
+
+代码推送至绑定的 GitHub 仓库后，在云托管控制台触发重新构建部署即可。
+
+---
+
 ## 交流群
 
 扫码加入交流群，获取使用帮助与最新动态：
