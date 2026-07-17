@@ -215,7 +215,7 @@ export function SettingsDialog() {
               <Input
                 value={aiBaseURL}
                 onChange={(e) => setAIBaseURL(e.target.value)}
-                placeholder="https://api.openai.com/v1"
+                placeholder="留空则使用服务端默认配置"
               />
             </div>
 

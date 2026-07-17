@@ -35,10 +35,14 @@ interface ProviderConfig {
   apiKey: string;
 }
 
+// 前端不再硬编码 baseURL / model 默认值，留空即可。
+// 留空时 getAIHeaders 不会发送 x-base-url / x-model / x-api-key 头，
+// 后端会自动回退到服务端环境变量 AI_DEFAULT_BASE_URL / AI_DEFAULT_MODEL / AI_DEFAULT_API_KEY，
+// 便于小程序/Web 前端直接调用而无需在客户端保存 Key。
 const PROVIDER_DEFAULTS: Record<AIProvider, ProviderConfig> = {
-  openai: { baseURL: 'https://api.openai.com/v1', model: 'gpt-4o', apiKey: '' },
-  anthropic: { baseURL: 'https://api.anthropic.com', model: 'claude-sonnet-4-20250514', apiKey: '' },
-  gemini: { baseURL: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-2.0-flash', apiKey: '' },
+  openai: { baseURL: '', model: '', apiKey: '' },
+  anthropic: { baseURL: '', model: '', apiKey: '' },
+  gemini: { baseURL: '', model: '', apiKey: '' },
 };
 
 function loadProviderConfigs(): Partial<Record<AIProvider, ProviderConfig>> {
@@ -134,8 +138,8 @@ export function getAIHeaders(): Record<string, string> {
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   aiProvider: 'openai',
   aiApiKey: '',
-  aiBaseURL: 'https://api.openai.com/v1',
-  aiModel: 'gpt-4o',
+  aiBaseURL: '',
+  aiModel: '',
   autoSave: true,
   autoSaveInterval: 500,
   _hydrated: false,
