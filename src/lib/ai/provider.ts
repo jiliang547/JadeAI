@@ -15,15 +15,15 @@ export interface AIConfig {
 // 便于小程序等前端直接调用而无需在客户端保存 Key。
 // 配置方式：在云托管控制台为服务添加环境变量
 //   AI_DEFAULT_API_KEY / AI_DEFAULT_BASE_URL / AI_DEFAULT_MODEL
-const SERVER_DEFAULT_API_KEY = process.env.AI_DEFAULT_API_KEY || '';
-const SERVER_DEFAULT_BASE_URL = process.env.AI_DEFAULT_BASE_URL || 'https://hjlyy.cc/v1';
-const SERVER_DEFAULT_MODEL = process.env.AI_DEFAULT_MODEL || 'gpt-5.6-luna';
+// 注意：必须在函数内动态读取 process.env，不要放到模块顶层。
+// 因为 Next.js standalone 模式下模块在 server.js 启动时即被加载并固化，
+// 若环境变量注入时机晚于模块加载，顶层常量会永远为空。
 
 export function extractAIConfig(request: NextRequest): AIConfig {
   const provider = request.headers.get('x-provider') || 'openai';
-  const apiKey = request.headers.get('x-api-key') || SERVER_DEFAULT_API_KEY;
-  const baseURL = request.headers.get('x-base-url') || SERVER_DEFAULT_BASE_URL;
-  const model = request.headers.get('x-model') || SERVER_DEFAULT_MODEL;
+  const apiKey = request.headers.get('x-api-key') || process.env.AI_DEFAULT_API_KEY || '';
+  const baseURL = request.headers.get('x-base-url') || process.env.AI_DEFAULT_BASE_URL || 'https://hjlyy.cc/v1';
+  const model = request.headers.get('x-model') || process.env.AI_DEFAULT_MODEL || 'gpt-5.6-luna';
   return { provider, apiKey, baseURL, model };
 }
 
