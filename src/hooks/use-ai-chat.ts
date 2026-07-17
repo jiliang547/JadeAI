@@ -108,23 +108,8 @@ export function useAIChat({ resumeId, sessionId, initialMessages, selectedModel 
     e.preventDefault();
     if (!input.trim()) return;
 
-    // Check if API key is configured
-    if (!useSettingsStore.getState().aiApiKey) {
-      const userMsg: UIMessage = {
-        id: generateId(),
-        role: 'user',
-        parts: [{ type: 'text', text: input }],
-      };
-      const errorMsg: UIMessage = {
-        id: generateId(),
-        role: 'assistant',
-        parts: [{ type: 'text', text: '__API_KEY_MISSING__' }],
-      };
-      // Keep these messages separate from useChat state so they never get sent to the server
-      setLocalMessages((prev) => [...prev, userMsg, errorMsg]);
-      setInput('');
-      return;
-    }
+    // 不再在前端检测 API Key。Key 由服务端通过环境变量 AI_DEFAULT_API_KEY 提供，
+    // 前端无需配置即可直接调用后端接口。若服务端确实未配置，由后端返回明确错误。
 
     // Clear local-only messages when user starts a real conversation
     if (localMessages.length > 0) {
