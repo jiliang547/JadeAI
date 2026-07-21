@@ -36,5 +36,14 @@ export async function resolveUser(fingerprint?: string | null) {
 }
 
 export function getUserIdFromRequest(request: Request): string | null {
-  return request.headers.get('x-fingerprint') || null;
+  // Prefer the x-fingerprint header (used by the mini-program / fetch calls).
+  // Fall back to the `fp` query param so the HTML preview can be opened
+  // directly inside a <web-view>, which cannot set custom request headers.
+  const header = request.headers.get('x-fingerprint');
+  if (header) return header;
+  const url = (request as any).nextUrl || (request as any).url;
+  if (url && typeof url.searchParams?.get === 'function') {
+    return url.searchParams.get('fp');
+  }
+  return null;
 }

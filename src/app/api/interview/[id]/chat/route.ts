@@ -110,6 +110,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return new Response(JSON.stringify({ error: error.message }), { status: 401 });
     }
     console.error('POST /api/interview/[id]/chat error:', error);
-    return new Response('Internal server error', { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: message }), { status: 500 });
   }
 }

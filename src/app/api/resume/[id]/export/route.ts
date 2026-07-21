@@ -29,6 +29,13 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // 允许调用方显式指定导出模板（优先于数据库存储的 template），
+    // 确保导出时使用用户生成时实际选择的模板，而非默认 classic。
+    const templateParam = request.nextUrl.searchParams.get('template');
+    if (templateParam) {
+      resume.template = templateParam as typeof resume.template;
+    }
+
     const format = request.nextUrl.searchParams.get('format') || 'json';
     const title = resume.title || 'resume';
     const now = new Date();
