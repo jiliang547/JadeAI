@@ -21,14 +21,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install Chromium, dependencies, and CJK fonts for PDF export.
-# NOTE: Alpine's default `chromium` package is often too old (<111) to support
-# the modern CSS Tailwind v4 emits (@property, oklch(), color-mix(), etc.),
-# which makes exported PDFs render as unstyled plain text. Use the
-# `chromium` package from the community repo's latest channel (or pin a
-# version >= 120) so the bundled Chromium can render Tailwind v4 correctly.
-RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
-    chromium nss freetype harfbuzz ca-certificates ttf-freefont \
+# Install Chromium, dependencies, and CJK fonts for PDF export
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont \
     font-noto-cjk
 
 # Tell puppeteer / generate-pdf to use the system Chromium
